@@ -3,7 +3,6 @@ package bmap
 import (
 	"errors"
 	"fmt"
-	"iter"
 	"sort"
 	"sync"
 )
@@ -130,7 +129,7 @@ func (bmap *bmap[K, V]) Len() int {
 	return len(bmap.keys)
 }
 
-func (bmap *bmap[K, V]) Range() iter.Seq2[K, V] {
+func (bmap *bmap[K, V]) Range() func(yield func(K, V) bool) {
 	return func(yield func(K, V) bool) {
 		bmap.mutex.RLock()
 		for _, key := range bmap.keys {
@@ -145,7 +144,7 @@ func (bmap *bmap[K, V]) Range() iter.Seq2[K, V] {
 	}
 }
 
-func (bmap *bmap[K, V]) ValueRange() iter.Seq[V] {
+func (bmap *bmap[K, V]) ValueRange() func(yield func(V) bool) {
 	return func(yield func(V) bool) {
 		bmap.mutex.RLock()
 		for _, key := range bmap.keys {
