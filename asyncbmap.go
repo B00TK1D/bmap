@@ -14,7 +14,7 @@ func (t Type[K, V]) NewAsync() asyncBmap[K, V] {
 	b := asyncBmap[K, V]{}
 	b.mutex = &sync.RWMutex{}
 	b.values = map[K]V{}
-  b.keyIndices = map[K]int{}
+	b.keyIndices = map[K]int{}
 	return b
 }
 
@@ -25,8 +25,8 @@ func (bmap *asyncBmap[K, V]) Set(key K, value V) {
 		_, ok := bmap.values[key]
 		bmap.values[key] = value
 		if !ok {
-			bmap.keys = append(bmap.keys, key)
 			bmap.keyIndices[key] = len(bmap.keys)
+			bmap.keys = append(bmap.keys, key)
 		}
 	}()
 }
@@ -44,7 +44,14 @@ func (bmap *asyncBmap[K, V]) Delete(key K) {
 		}
 		delete(bmap.values, key)
 		keyIndex := bmap.keyIndices[key]
-		bmap.keys = append(append(make([]K, len(bmap.keys)-1), bmap.keys[:keyIndex]...), bmap.keys[keyIndex+1:]...)
+		if keyIndex == len(bmap.keyIndices) {
+			bmap.keys = bmap.keys[:keyIndex]
+		} else {
+			bmap.keys = append(bmap.keys[:keyIndex], bmap.keys[keyIndex+1:]...)
+			for _, k := range bmap.keys[keyIndex:] {
+				bmap.keyIndices[k]--
+			}
+		}
 		delete(bmap.keyIndices, key)
 	}()
 }
@@ -65,6 +72,7 @@ func (bmap *asyncBmap[K, V]) Swap(key1, key2 K) error {
 	}
 	bmap.mutex.Lock()
 	go func() {
+		bmap.values[key1], bmap.values[key2] = bmap.values[key2], bmap.values[key1]
 		bmap.keyIndices[key1], bmap.keyIndices[key2] = index2, index1
 		bmap.keys[index1], bmap.keys[index2] = bmap.keys[index2], bmap.keys[index1]
 		bmap.mutex.Unlock()
