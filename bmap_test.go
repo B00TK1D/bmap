@@ -28,7 +28,7 @@ func TestSet(t *testing.T) {
 func TestAsync(t *testing.T) {
 	bmap := Type[int, int]{}.NewAsync()
 	for i := range 100000 {
-		want := i*13
+		want := i * 13
 		bmap.Set(i, want)
 		got, _ := bmap.Get(i)
 		if want != got {
