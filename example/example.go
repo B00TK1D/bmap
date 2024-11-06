@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	bmap := bmap.Type[string, int]{}.NewAsync()
+	bmap := Bmap[string, int]{}
 	bmap.Set("test2", 3)
 	bmap.Set("test1", 9)
 	bmap.Set("test3", 7)

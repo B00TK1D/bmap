@@ -1,9 +1,11 @@
 package bmap
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSet(t *testing.T) {
-	bmap := Type[int, int]{}.New()
+	bmap := Bmap[int, int]{}
 	for i := range 1000 {
 		go func() {
 			for j := range 100 {
@@ -13,9 +15,6 @@ func TestSet(t *testing.T) {
 				if want != got {
 					t.Errorf("got %d, wanted %d", got, want)
 				}
-				bmap.Sort(func(i, j int) bool {
-					return i > j
-				}, false, false)
 				got, _ = bmap.Get(i)
 				if want != got {
 					t.Errorf("got %d, wanted %d", got, want)
@@ -26,7 +25,7 @@ func TestSet(t *testing.T) {
 }
 
 func TestAsync(t *testing.T) {
-	bmap := Type[int, int]{}.NewAsync()
+	bmap := Bmap[int, int]{}
 	for i := range 100000 {
 		want := i * 13
 		bmap.Set(i, want)
@@ -38,7 +37,7 @@ func TestAsync(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	bmap := Type[int, int]{}.New()
+	bmap := Bmap[int, int]{}
 	want := 847392
 	bmap.Set(1001, want)
 	for i := range 1000 {
@@ -54,7 +53,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestSwap(t *testing.T) {
-	bmap := Type[int, int]{}.New()
+	bmap := Bmap[int, int]{}
 	want := 107834
 	bmap.Set(-1, want)
 	for i := range 1000 {
@@ -64,5 +63,29 @@ func TestSwap(t *testing.T) {
 	got, _ := bmap.Get(999)
 	if want != got {
 		t.Errorf("got %d, wanted %d", got, want)
+	}
+}
+
+func Benchmark(b *testing.B) {
+	bmap := Bmap[int, int]{}
+	for i := range 1000 {
+		go func() {
+			for j := range 1000 {
+				want := j
+				bmap.Set(i, want)
+				got, _ := bmap.Get(i)
+				if want != got {
+					b.Errorf("got %d, wanted %d", got, want)
+				}
+				bmap.Sort(func(i, j int) bool {
+					return i > j
+				})
+				got, _ = bmap.Get(i)
+				if want != got {
+					b.Errorf("got %d, wanted %d", got, want)
+				}
+				bmap.Delete(i)
+			}
+		}()
 	}
 }
