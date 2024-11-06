@@ -12,6 +12,7 @@ type Bmap[K comparable, V any] struct {
 	values     map[K]V
 	keyIndices map[K]int
 	mutex      sync.RWMutex
+	sem        Bsem
 	sort       func(V, V) bool
 	sortKeys   func(K, K) bool
 	sticky     bool
@@ -19,9 +20,13 @@ type Bmap[K comparable, V any] struct {
 }
 
 func (bmap *Bmap[K, V]) Set(key K, value V) {
-	bmap.mutex.Lock()
+	bmap.sem.Add(1)
 	go func() {
-		defer bmap.mutex.Unlock()
+		bmap.mutex.Lock()
+		defer func() {
+			bmap.sem.Done()
+			bmap.mutex.Unlock()
+		}()
 		if bmap.values == nil {
 			bmap.values = make(map[K]V)
 		}
@@ -50,6 +55,7 @@ func (bmap *Bmap[K, V]) Set(key K, value V) {
 
 func (bmap *Bmap[K, V]) Get(key K) (V, bool) {
 	var nilVal V
+	bmap.sem.Wait()
 	bmap.mutex.RLock()
 	if bmap.values == nil {
 		bmap.mutex.RUnlock()
@@ -64,6 +70,7 @@ func (bmap *Bmap[K, V]) Get(key K) (V, bool) {
 }
 
 func (bmap *Bmap[K, V]) Delete(key K) {
+	bmap.sem.Wait()
 	bmap.mutex.Lock()
 	go func() {
 		defer bmap.mutex.Unlock()
@@ -89,6 +96,7 @@ func (bmap *Bmap[K, V]) Delete(key K) {
 }
 
 func (bmap *Bmap[K, V]) Swap(key1, key2 K) error {
+	bmap.sem.Wait()
 	bmap.mutex.RLock()
 	if bmap.values == nil {
 		bmap.mutex.RUnlock()
@@ -114,6 +122,7 @@ func (bmap *Bmap[K, V]) Swap(key1, key2 K) error {
 }
 
 func (bmap *Bmap[K, V]) Sort(s func(V, V) bool) {
+	bmap.sem.Wait()
 	bmap.mutex.Lock()
 	if bmap.keys == nil {
 		bmap.mutex.Unlock()
@@ -131,6 +140,7 @@ func (bmap *Bmap[K, V]) Sort(s func(V, V) bool) {
 }
 
 func (bmap *Bmap[K, V]) SortAdvanced(s func(V, V) bool, stable bool, sticky bool) {
+	bmap.sem.Wait()
 	bmap.mutex.Lock()
 	if bmap.keys == nil {
 		bmap.mutex.Unlock()
@@ -158,6 +168,7 @@ func (bmap *Bmap[K, V]) SortAdvanced(s func(V, V) bool, stable bool, sticky bool
 }
 
 func (bmap *Bmap[K, V]) SortKeys(s func(K, K) bool, stable bool, sticky bool) {
+	bmap.sem.Wait()
 	bmap.mutex.Lock()
 	if bmap.keys == nil {
 		bmap.mutex.Unlock()
@@ -185,11 +196,13 @@ func (bmap *Bmap[K, V]) SortKeys(s func(K, K) bool, stable bool, sticky bool) {
 }
 
 func (bmap *Bmap[K, V]) Len() int {
+	bmap.sem.Wait()
 	return len(bmap.keys)
 }
 
 func (bmap *Bmap[K, V]) Range() func(yield func(K, V) bool) {
 	return func(yield func(K, V) bool) {
+		bmap.sem.Wait()
 		bmap.mutex.RLock()
 		if bmap.keys == nil {
 			bmap.mutex.RUnlock()
@@ -209,6 +222,7 @@ func (bmap *Bmap[K, V]) Range() func(yield func(K, V) bool) {
 
 func (bmap *Bmap[K, V]) Values() func(yield func(V) bool) {
 	return func(yield func(V) bool) {
+		bmap.sem.Wait()
 		bmap.mutex.RLock()
 		if bmap.keys == nil || bmap.values == nil {
 			bmap.mutex.RUnlock()
@@ -228,6 +242,7 @@ func (bmap *Bmap[K, V]) Values() func(yield func(V) bool) {
 
 func (bmap *Bmap[K, V]) Keys() func(yield func(K) bool) {
 	return func(yield func(K) bool) {
+		bmap.sem.Wait()
 		bmap.mutex.RLock()
 		if bmap.keys == nil {
 			bmap.mutex.RUnlock()
@@ -245,5 +260,6 @@ func (bmap *Bmap[K, V]) Keys() func(yield func(K) bool) {
 }
 
 func (bmap *Bmap[K, V]) Map() map[K]V {
+	bmap.sem.Wait()
 	return bmap.values
 }
