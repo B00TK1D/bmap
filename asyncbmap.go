@@ -12,7 +12,7 @@ type asyncBmap[K comparable, V any] struct {
 
 func (t Type[K, V]) NewAsync() asyncBmap[K, V] {
 	b := asyncBmap[K, V]{}
-	b.mutex = &sync.RWMutex{}
+	b.mutex = sync.RWMutex{}
 	b.values = map[K]V{}
 	b.keyIndices = map[K]int{}
 	return b
@@ -32,9 +32,6 @@ func (bmap *asyncBmap[K, V]) Set(key K, value V) {
 }
 
 func (bmap *asyncBmap[K, V]) Delete(key K) {
-	if bmap.mutex == nil {
-		return
-	}
 	bmap.mutex.Lock()
 	go func() {
 		defer bmap.mutex.Unlock()
@@ -57,9 +54,6 @@ func (bmap *asyncBmap[K, V]) Delete(key K) {
 }
 
 func (bmap *asyncBmap[K, V]) Swap(key1, key2 K) error {
-	if bmap.mutex == nil {
-		return errors.New("bmap empty")
-	}
 	bmap.mutex.RLock()
 	index1, ok1 := bmap.keyIndices[key1]
 	index2, ok2 := bmap.keyIndices[key2]
@@ -81,9 +75,6 @@ func (bmap *asyncBmap[K, V]) Swap(key1, key2 K) error {
 }
 
 func (bmap *asyncBmap[K, V]) Sort(s func(V, V) bool) {
-	if bmap.mutex == nil {
-		return
-	}
 	bmap.mutex.Lock()
 	sort.Slice(bmap.keys, func(i, j int) bool {
 		return s(bmap.values[bmap.keys[i]], bmap.values[bmap.keys[j]])
@@ -95,9 +86,6 @@ func (bmap *asyncBmap[K, V]) Sort(s func(V, V) bool) {
 }
 
 func (bmap *asyncBmap[K, V]) SortStable(s func(V, V) bool) {
-	if bmap.mutex == nil {
-		return
-	}
 	bmap.mutex.Lock()
 	go func() {
 		sort.SliceStable(bmap.keys, func(i, j int) bool {
@@ -111,9 +99,6 @@ func (bmap *asyncBmap[K, V]) SortStable(s func(V, V) bool) {
 }
 
 func (bmap *asyncBmap[K, V]) SortKeys(s func(K, K) bool) {
-	if bmap.mutex == nil {
-		return
-	}
 	bmap.mutex.Lock()
 	go func() {
 		sort.Slice(bmap.keys, func(i, j int) bool {
@@ -127,9 +112,6 @@ func (bmap *asyncBmap[K, V]) SortKeys(s func(K, K) bool) {
 }
 
 func (bmap *asyncBmap[K, V]) SortKeysStable(s func(K, K) bool) {
-	if bmap.mutex == nil {
-		return
-	}
 	bmap.mutex.Lock()
 	go func() {
 		sort.SliceStable(bmap.keys, func(i, j int) bool {

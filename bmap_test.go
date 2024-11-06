@@ -15,7 +15,7 @@ func TestSet(t *testing.T) {
 				}
 				bmap.Sort(func(i, j int) bool {
 					return i > j
-				})
+				}, false, false)
 				got, _ = bmap.Get(i)
 				if want != got {
 					t.Errorf("got %d, wanted %d", got, want)
