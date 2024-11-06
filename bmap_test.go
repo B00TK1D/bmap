@@ -102,19 +102,17 @@ func BenchmarkMultiBmap(b *testing.B) {
 	bmaps := Bmap[int, *Bmap[int, int]]{}
 
 	for i := range b.N {
-		for j := range b.N {
-			bmap := Bmap[int, int]{}
-			bmap.Set(i, j)
-			bmaps.Set(i, &bmap)
-		}
-		for j := range b.N {
-			bmap, _ := bmaps.Get(i)
-			bmap.Get(j)
-		}
-		for j := range b.N {
-			bmap, _ := bmaps.Get(i)
-			bmap.Delete(j)
-		}
+		bmap := Bmap[int, int]{}
+		bmap.Set(i, i)
+		bmaps.Set(i, &bmap)
+	}
+	for i := range b.N {
+		bmap, _ := bmaps.Get(i)
+		bmap.Get(i)
+	}
+	for i := range b.N {
+		bmap, _ := bmaps.Get(i)
+		bmap.Delete(i)
 	}
 }
 
@@ -122,19 +120,17 @@ func BenchmarkMultiSyncmap(b *testing.B) {
 	smaps := sync.Map{}
 
 	for i := range b.N {
-		for j := range b.N {
-			smap := sync.Map{}
-			smap.Store(j, j)
-			smaps.Store(i, &smap)
-		}
-		for j := range b.N {
-			smap, _ := smaps.Load(i)
-			smap.(*sync.Map).Load(j)
-		}
-		for j := range b.N {
-			smap, _ := smaps.Load(i)
-			smap.(*sync.Map).Delete(j)
-		}
+		smap := sync.Map{}
+		smap.Store(i, i)
+		smaps.Store(i, &smap)
+	}
+	for i := range b.N {
+		smap, _ := smaps.Load(i)
+		smap.(*sync.Map).Load(i)
+	}
+	for i := range b.N {
+		smap, _ := smaps.Load(i)
+		smap.(*sync.Map).Delete(i)
 	}
 }
 
