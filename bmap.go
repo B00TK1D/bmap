@@ -2,7 +2,6 @@ package bmap
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 	"sort"
 	"sync"
@@ -17,21 +16,6 @@ type Bmap[K comparable, V any] struct {
 	sortKeys   func(K, K) bool
 	sticky     bool
 	stickyKeys bool
-}
-
-type bmap[K comparable, V any] interface {
-	Set(K, V)
-	Get(K) (V, bool)
-	Delete(K)
-	Swap(K, K) error
-	Sort(func(V, V) bool)
-	SortAdvanced(func(V, V) bool, bool, bool)
-	SortKeys(func(K, K) bool, bool, bool)
-	Range() func(func(K, V) bool)
-	Keys() func(func(K) bool)
-	Values() func(func(V) bool)
-	Len() int
-	String() string
 }
 
 func (bmap *Bmap[K, V]) Set(key K, value V) {
@@ -136,13 +120,13 @@ func (bmap *Bmap[K, V]) Sort(s func(V, V) bool) {
 		return
 	}
 	go func() {
+		defer bmap.mutex.Unlock()
 		sort.Slice(bmap.keys, func(i, j int) bool {
 			return s(bmap.values[bmap.keys[i]], bmap.values[bmap.keys[j]])
 		})
 		for i, k := range bmap.keys {
 			bmap.keyIndices[k] = i
 		}
-		bmap.mutex.Unlock()
 	}()
 }
 
@@ -157,6 +141,7 @@ func (bmap *Bmap[K, V]) SortAdvanced(s func(V, V) bool, stable bool, sticky bool
 		bmap.sortKeys = nil
 	}
 	go func() {
+		defer bmap.mutex.Unlock()
 		if stable {
 			sort.SliceStable(bmap.keys, func(i, j int) bool {
 				return s(bmap.values[bmap.keys[i]], bmap.values[bmap.keys[j]])
@@ -169,7 +154,6 @@ func (bmap *Bmap[K, V]) SortAdvanced(s func(V, V) bool, stable bool, sticky bool
 		for i, k := range bmap.keys {
 			bmap.keyIndices[k] = i
 		}
-		bmap.mutex.Unlock()
 	}()
 }
 
@@ -184,6 +168,7 @@ func (bmap *Bmap[K, V]) SortKeys(s func(K, K) bool, stable bool, sticky bool) {
 		bmap.sort = nil
 	}
 	go func() {
+		defer bmap.mutex.Unlock()
 		if stable {
 			sort.SliceStable(bmap.keys, func(i, j int) bool {
 				return s(bmap.keys[i], bmap.keys[j])
@@ -196,7 +181,6 @@ func (bmap *Bmap[K, V]) SortKeys(s func(K, K) bool, stable bool, sticky bool) {
 		for i, k := range bmap.keys {
 			bmap.keyIndices[k] = i
 		}
-		bmap.mutex.Unlock()
 	}()
 }
 
@@ -258,24 +242,6 @@ func (bmap *Bmap[K, V]) Keys() func(yield func(K) bool) {
 		}
 		bmap.mutex.RUnlock()
 	}
-}
-
-func (bmap *Bmap[K, V]) String() string {
-	bmap.mutex.RLock()
-	if bmap.keys == nil {
-		bmap.mutex.RUnlock()
-		return ""
-	}
-
-	var str string
-	for _, key := range bmap.keys {
-		val, ok := bmap.values[key]
-		if ok {
-			str = fmt.Sprintf("%s%s: %s\n", str, fmt.Sprint(key), fmt.Sprint(val))
-		}
-	}
-	bmap.mutex.RUnlock()
-	return str
 }
 
 func (bmap *Bmap[K, V]) Map() map[K]V {

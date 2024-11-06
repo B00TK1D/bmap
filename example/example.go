@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	bmap := Bmap[string, int]{}
+	bmap := bmap.Bmap[string, int]{}
 	bmap.Set("test2", 3)
 	bmap.Set("test1", 9)
 	bmap.Set("test3", 7)
@@ -27,7 +27,7 @@ func main() {
 	fmt.Println("Key sort")
 	bmap.SortKeys(func(k1, k2 string) bool {
 		return strings.Compare(k1, k2) < 0
-	})
+	}, false, false)
 	fmt.Println(bmap)
 
 	fmt.Println("Value sort")

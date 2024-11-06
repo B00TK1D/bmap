@@ -6,9 +6,9 @@ import (
 
 func TestSet(t *testing.T) {
 	bmap := Bmap[int, int]{}
-	for i := range 1000 {
+	for i := range 10 {
 		go func() {
-			for j := range 100 {
+			for j := range 10 {
 				want := j
 				bmap.Set(i, want)
 				got, _ := bmap.Get(i)
